@@ -18,7 +18,7 @@ Provide an input called 'message' to receive a response.
 
 ```ts
 {
-	module: "<change me>",
+	module: "AQBCVx2y7pqsouf2GbLU_etXglcsXZDcWHKs5IiqV0I0DQ",
 	method: "repeatMessage",
 	data: {
 		message: <string>,
