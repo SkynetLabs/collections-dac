@@ -12,7 +12,11 @@ import {
   taggedRegistryEntryKeys,
   validSeedPhrase,
 } from "libskynet";
-import { generateSeedPhraseRandom, overwriteRegistryEntry, upload } from "libskynetnode";
+import {
+  generateSeedPhraseRandom,
+  overwriteRegistryEntry,
+  upload,
+} from "libskynetnode";
 import read from "read";
 
 // Helper variables to make it easier to return empty values alongside errors.
@@ -35,7 +39,9 @@ function readFile(fileName: string): [string, string | null] {
 
 // readFileBinary is a wrapper for fs.readFileSync that handles the try-catch
 // for the caller.
-function readFileBinary(fileName: string): [Uint8Array, string | null] {
+function readFileBinary(
+  fileName: string
+): [Uint8Array, string | null] {
   try {
     let data = fs.readFileSync(fileName, null);
     return [data, null];
@@ -46,7 +52,10 @@ function readFileBinary(fileName: string): [Uint8Array, string | null] {
 
 // writeFile is a wrapper for fs.writeFileSync which handles the try-catch in a
 // non-exception way.
-function writeFile(fileName: string, fileData: string): string | null {
+function writeFile(
+  fileName: string,
+  fileData: string
+): string | null {
   try {
     fs.writeFileSync(fileName, fileData);
     return null;
@@ -57,7 +66,9 @@ function writeFile(fileName: string, fileData: string): string | null {
 
 // hardenedSeedPhrase will take a password, harden it with 100,000 iterations
 // of hashing, and then turn it into a seed phrase.
-function hardenedSeedPhrase(password: string): [string, string | null] {
+function hardenedSeedPhrase(
+  password: string
+): [string, string | null] {
   let pw = password;
   // Add some hashing iterations to the password to make it stronger.
   for (let i = 0; i < 1000000; i++) {
@@ -70,32 +81,67 @@ function hardenedSeedPhrase(password: string): [string, string | null] {
 
 // seedPhraseToRegistryKeys will convert a seed phrase to the set of registry
 // keys that govern the registry entry where the module is published.
-function seedPhraseToRegistryKeys(seedPhrase: string): [any, Uint8Array, string | null] {
+function seedPhraseToRegistryKeys(
+  seedPhrase: string
+): [any, Uint8Array, string | null] {
   let [seed, errVSP] = validSeedPhrase(seedPhrase);
   if (errVSP !== null) {
-    return [nkp, nu8, addContextToErr(errVSP, "unable to compute seed phrase")];
+    return [
+      nkp,
+      nu8,
+      addContextToErr(errVSP, "unable to compute seed phrase"),
+    ];
   }
-  let [keypair, datakey, errTREK] = taggedRegistryEntryKeys(seed, "module-build", "module-key");
+  let [keypair, datakey, errTREK] = taggedRegistryEntryKeys(
+    seed,
+    "module-build",
+    "module-key"
+  );
   if (errTREK !== null) {
-    return [nkp, nu8, addContextToErr(errTREK, "unable to compute registry entry keys")];
+    return [
+      nkp,
+      nu8,
+      addContextToErr(
+        errTREK,
+        "unable to compute registry entry keys"
+      ),
+    ];
   }
   return [keypair, datakey, null];
 }
 
 // seedPhraseToRegistryLink will take a seedPhrase as input and convert it to
 // the registry link for the module.
-function seedPhraseToRegistryLink(seedPhrase: string): [string, string | null] {
-  let [keypair, datakey, errSPTRK] = seedPhraseToRegistryKeys(seedPhrase);
+function seedPhraseToRegistryLink(
+  seedPhrase: string
+): [string, string | null] {
+  let [keypair, datakey, errSPTRK] =
+    seedPhraseToRegistryKeys(seedPhrase);
   if (errSPTRK !== null) {
-    return ["", addContextToErr(errSPTRK, "unable to compute registry keys")];
+    return [
+      "",
+      addContextToErr(errSPTRK, "unable to compute registry keys"),
+    ];
   }
-  let [entryID, errDREID] = deriveRegistryEntryID(keypair.publicKey, datakey);
+  let [entryID, errDREID] = deriveRegistryEntryID(
+    keypair.publicKey,
+    datakey
+  );
   if (errDREID !== null) {
-    return ["", addContextToErr(errDREID, "unable to compute registry entry id")];
+    return [
+      "",
+      addContextToErr(
+        errDREID,
+        "unable to compute registry entry id"
+      ),
+    ];
   }
   let [registryLink, errRL] = resolverLink(entryID);
   if (errRL !== null) {
-    return ["", addContextToErr(errRL, "unable to compute registry link")];
+    return [
+      "",
+      addContextToErr(errRL, "unable to compute registry link"),
+    ];
   }
   return [registryLink, null];
 }
@@ -114,22 +160,29 @@ function handlePass(password: string) {
       // The file does not exist, we need to confirm the
       // password.
       console.log();
-      console.log("No production entry found for module. Creating new production module...");
-      console.log("If someone can guess the password, they can push arbitrary changes to your module.");
+      console.log(
+        "No production entry found for module. Creating new production module..."
+      );
+      console.log(
+        "If someone can guess the password, they can push arbitrary changes to your module."
+      );
       console.log("Please use a secure password.");
       console.log();
-      read({ prompt: "Confirm Password: ", silent: true }, function (err: any, confirmPassword: string) {
-        if (err) {
-          console.error("unable to fetch password:", err);
-          process.exit(1);
+      read(
+        { prompt: "Confirm Password: ", silent: true },
+        function (err: any, confirmPassword: string) {
+          if (err) {
+            console.error("unable to fetch password:", err);
+            process.exit(1);
+          }
+          if (password !== confirmPassword) {
+            console.error("passwords do not match");
+            process.exit(1);
+          }
+          password = password + moduleSalt;
+          handlePassConfirm(password);
         }
-        if (password !== confirmPassword) {
-          console.error("passwords do not match");
-          process.exit(1);
-        }
-        password = password + moduleSalt;
-        handlePassConfirm(password);
-      });
+      );
     } else {
       // If the seed file does exist, or if we are using dev,
       // there's no need to confirm the password but we do
@@ -177,7 +230,8 @@ function handlePassConfirm(password: string) {
       console.error("Unable to generate seed phrase:", errGSP);
       process.exit(1);
     }
-    let [registryLink, errSPTRL] = seedPhraseToRegistryLink(seedPhrase);
+    let [registryLink, errSPTRL] =
+      seedPhraseToRegistryLink(seedPhrase);
     if (errSPTRL !== null) {
       console.error("Unable to generate registry link:", errSPTRL);
       process.exit(1);
@@ -223,7 +277,9 @@ function handlePassConfirm(password: string) {
   } else {
     let [sp, errRF] = readFile(seedFile);
     if (errRF !== null) {
-      console.error("unable to read seed phrase for dev command from disk");
+      console.error(
+        "unable to read seed phrase for dev command from disk"
+      );
       process.exit(1);
     }
     let [rl, errSPTRL] = seedPhraseToRegistryLink(sp);
@@ -255,13 +311,23 @@ function handlePassConfirm(password: string) {
     .then((result) => {
       console.log("Updating module's registry entry...");
       // Update the v2 skylink.
-      let [keypair, datakey, errSPTRK] = seedPhraseToRegistryKeys(seedPhrase);
+      let [keypair, datakey, errSPTRK] =
+        seedPhraseToRegistryKeys(seedPhrase);
       if (errSPTRK !== null) {
-        return ["", addContextToErr(errSPTRK, "unable to compute registry keys")];
+        return [
+          "",
+          addContextToErr(
+            errSPTRK,
+            "unable to compute registry keys"
+          ),
+        ];
       }
       let [bufLink, errBTB] = b64ToBuf(result);
       if (errBTB !== null) {
-        return ["", addContextToErr(errBTB, "unable to decode skylink")];
+        return [
+          "",
+          addContextToErr(errBTB, "unable to decode skylink"),
+        ];
       }
       overwriteRegistryEntry(keypair, datakey, bufLink)
         .then(() => {
@@ -331,13 +397,16 @@ if (!fs.existsSync(".module-salt")) {
 
 // Need to get a password if this is a prod build.
 if (process.argv[2] === "prod") {
-  read({ prompt: "Password: ", silent: true }, function (err: any, password: string) {
-    if (err) {
-      console.error("unable to fetch password:", err);
-      process.exit(1);
+  read(
+    { prompt: "Password: ", silent: true },
+    function (err: any, password: string) {
+      if (err) {
+        console.error("unable to fetch password:", err);
+        process.exit(1);
+      }
+      handlePass(password);
     }
-    handlePass(password);
-  });
+  );
 } else {
   handlePass("");
 }
