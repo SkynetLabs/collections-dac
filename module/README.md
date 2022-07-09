@@ -35,9 +35,39 @@ For input, we just need the file data.
 ```ts
 {
 	encryptedFileSkylink: <string>,
-	viewKey: <Uint8Array>,
+	viewKey: <string>,
 }
 ```
 
 The output is the encrypted file plus the encryption key for
 the file.
+
+### viewEncryptedFile
+
+viewEncryptedFile takes a skylink and a viewkey and then
+returns the fileData of the encrypted file.
+
+###### Input:
+
+For input, we need the skylink and the view key.
+
+```ts
+{
+	module: "AQBCVx2y7pqsouf2GbLU_etXglcsXZDcWHKs5IiqV0I0DQ",
+	method: "createEncryptedFile",
+	data: {
+		encryptedFileSkylink: <string>,
+		viewKey: <string>,
+	},
+}
+```
+
+###### Output:
+
+```ts
+{
+	fileData: <Uint8Array>,
+}
+```
+
+The output is the decrypted file data.

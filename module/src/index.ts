@@ -1,16 +1,18 @@
 import {
+  ActiveQuery,
   addContextToErr,
   addHandler,
   createIndependentFileSmall,
   getSeed,
   handleMessage,
+  viewIndependentFileSmall,
 } from "libkmodule";
-import { bufToB64 } from "libskynet";
-import type { ActiveQuery } from "libkmodule";
+import { bufToB64, validSkylink } from "libskynet";
 
 onmessage = handleMessage;
 
 addHandler("createEncryptedFile", handleCreateEncryptedFile);
+addHandler("viewEncryptedFile", handleViewEncryptedFile);
 
 async function handleCreateEncryptedFile(aq: ActiveQuery) {
   // Perform the input checking.
@@ -45,5 +47,44 @@ async function handleCreateEncryptedFile(aq: ActiveQuery) {
   aq.respond({
     skylink: file.skylink,
     viewKey: file.viewKey,
+  });
+}
+
+async function handleViewEncryptedFile(aq: ActiveQuery) {
+  // Perform input checking.
+  const skylink = aq.callerInput.encryptedFileSkylink;
+  const viewKey = aq.callerInput.viewKey;
+  if (typeof skylink !== "string") {
+    aq.reject("need encryptedFileSkylink to be a base64 string");
+    return;
+  }
+  if (validSkylink(skylink) !== true) {
+    aq.reject("need encryptedFileSkylink to be a base64 skylink");
+    return;
+  }
+  if (typeof viewKey !== "string") {
+    aq.reject("need viewKey to be a string");
+    return;
+  }
+
+  // Open the file data.
+  const [file, errVIFS] = await viewIndependentFileSmall(
+    skylink,
+    viewKey
+  );
+  if (errVIFS !== null) {
+    aq.reject(addContextToErr(errVIFS, "unable to view file"));
+    return;
+  }
+  // Read the data.
+  const [fileData, errRD] = await file.readData();
+  if (errRD !== null) {
+    aq.reject(addContextToErr(errRD, "unable to read file contents"));
+    return;
+  }
+
+  // Respond with the file data.
+  aq.respond({
+    fileData,
   });
 }
