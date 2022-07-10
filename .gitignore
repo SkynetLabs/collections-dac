@@ -6,3 +6,9 @@ build
 dist-build
 dist
 node_modules
+
+# Gatsby files
+node_modules/
+.cache/
+public
+webapp/src/gatsby-types.d.ts
