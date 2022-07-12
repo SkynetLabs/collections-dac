@@ -5,12 +5,17 @@ import * as kernel from "libkernel";
 // button if the user is not logged in, and it will be an upload
 // button if the user is logged in.
 function LoginOrUploadCard(props) {
-  // Establish our stateful variables. The default state assumes
-  // the kernel is not initialized, which means the button should
-  // say 'loading...' and be disabled.
+  // Establish our stateful variables for the button. The default
+  // state assumes the kernel is not initialized, which means the
+  // button should say 'loading...' and be disabled.
   const [buttonText, setButtonText] = React.useState("Loading...");
   const [buttonDisabled, setButtonDisabled] = React.useState(true);
   const [buttonFn, setButtonFn] = React.useState(() => () => {});
+
+  // Establish stateful variables for the output text.
+  const [outputHidden, setOutputHidden] = React.useState(true);
+  const [outputSkylink, setOutputSkylink] = React.useState("");
+  const [outputViewKey, setOutputViewKey] = React.useState("");
 
   // Establish the function to update our stateful variables.
   React.useEffect(() => {
@@ -47,7 +52,7 @@ function LoginOrUploadCard(props) {
       setButtonText("Upload to Skynet");
       setButtonDisabled(false);
       setButtonFn(() => () => {
-        alert("uploading is not implemented yet");
+        document.getElementById("filePicker").click();
       });
 
       // Check for logoutComplete. If logout happens, we reload
@@ -58,8 +63,58 @@ function LoginOrUploadCard(props) {
     processLoginFlow();
   }, [props]);
 
+  // uploadFile will process the file that is selected by the user,
+  // processing it with a FileReader and then sending the result to
+  // collectionsDAC to upload the file.
+  const uploadFile = async () => {
+    const files = document.getElementById("filePicker").files;
+    if (files.length !== 1) {
+      // User did not select a file.
+      return;
+    }
+
+    // Update our button.
+    setButtonDisabled(true);
+    setButtonText("Uploading...");
+
+    // Create the file reader and prepare to finish reading the data.
+    const file = files[0];
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = async () => {
+      const fileData = new Uint8Array(reader.result);
+      let [result, err] = await kernel.callModule(
+        "AQBCVx2y7pqsouf2GbLU_etXglcsXZDcWHKs5IiqV0I0DQ",
+        "createEncryptedFile",
+        {
+          fileData,
+        }
+      );
+
+      // Update the button to let the user pick another file.
+      setButtonDisabled(false);
+      setButtonText("Upload to Skynet");
+
+      // Check the error and fill out the output text.
+      setOutputHidden(false);
+      if (err !== null) {
+        setOutputSkylink("Unable to upload file:");
+        setOutputViewKey(err);
+      } else {
+        setOutputSkylink("Skylink: "+result.skylink);
+        setOutputViewKey("ViewKey: "+result.viewKey);
+      }
+    };
+  };
+
   return (
     <div>
+      <input
+        type="file"
+        id="filePicker"
+        style={{ display: "none" }}
+        onChange={uploadFile}
+      />
       <button
         style={{ margin: "12px" }}
         onClick={buttonFn}
@@ -67,6 +122,11 @@ function LoginOrUploadCard(props) {
       >
         {buttonText}
       </button>
+      <p hidden={outputHidden}>
+        {outputSkylink}
+        <br />
+        {outputViewKey}
+      </p>
     </div>
   );
 }

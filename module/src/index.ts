@@ -52,7 +52,7 @@ async function handleCreateEncryptedFile(aq: ActiveQuery) {
 
 async function handleViewEncryptedFile(aq: ActiveQuery) {
   // Perform input checking.
-  const skylink = aq.callerInput.encryptedFileSkylink;
+  const skylink = aq.callerInput.skylink;
   const viewKey = aq.callerInput.viewKey;
   if (typeof skylink !== "string") {
     aq.reject("need encryptedFileSkylink to be a base64 string");

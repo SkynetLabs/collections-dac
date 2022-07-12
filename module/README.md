@@ -34,7 +34,7 @@ For input, we just need the file data.
 
 ```ts
 {
-	encryptedFileSkylink: <string>,
+	skylink: <string>,
 	viewKey: <string>,
 }
 ```
@@ -56,7 +56,7 @@ For input, we need the skylink and the view key.
 	module: "AQBCVx2y7pqsouf2GbLU_etXglcsXZDcWHKs5IiqV0I0DQ",
 	method: "createEncryptedFile",
 	data: {
-		encryptedFileSkylink: <string>,
+		skylink: <string>,
 		viewKey: <string>,
 	},
 }

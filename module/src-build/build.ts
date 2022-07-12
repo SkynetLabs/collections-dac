@@ -6,8 +6,8 @@ import {
   b64ToBuf,
   bufToHex,
   deriveRegistryEntryID,
+  entryIDToSkylink,
   generateSeedPhraseDeterministic,
-  resolverLink,
   sha512,
   taggedRegistryEntryKeys,
   validSeedPhrase,
@@ -136,13 +136,7 @@ function seedPhraseToRegistryLink(
       ),
     ];
   }
-  let [registryLink, errRL] = resolverLink(entryID);
-  if (errRL !== null) {
-    return [
-      "",
-      addContextToErr(errRL, "unable to compute registry link"),
-    ];
-  }
+  let registryLink = entryIDToSkylink(entryID);
   return [registryLink, null];
 }
 
