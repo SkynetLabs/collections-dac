@@ -54,7 +54,7 @@ For input, we need the skylink and the view key.
 ```ts
 {
 	module: "AQBCVx2y7pqsouf2GbLU_etXglcsXZDcWHKs5IiqV0I0DQ",
-	method: "createEncryptedFile",
+	method: "viewEncryptedFile",
 	data: {
 		skylink: <string>,
 		viewKey: <string>,

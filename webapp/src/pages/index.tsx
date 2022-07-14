@@ -14,8 +14,7 @@ function LoginOrUploadCard(props) {
 
   // Establish stateful variables for the output text.
   const [outputHidden, setOutputHidden] = React.useState(true);
-  const [outputSkylink, setOutputSkylink] = React.useState("");
-  const [outputViewKey, setOutputViewKey] = React.useState("");
+  const [outputFileKey, setOutputFileKey] = React.useState("");
 
   // Establish the function to update our stateful variables.
   React.useEffect(() => {
@@ -45,6 +44,7 @@ function LoginOrUploadCard(props) {
       const err = await kernel.kernelLoaded();
       if (err !== null) {
         alert(err);
+        console.error(err);
         setButtonText("Unable to Load Skynet: " + err);
         setButtonDisabled(true);
         return;
@@ -90,19 +90,19 @@ function LoginOrUploadCard(props) {
           fileData,
         }
       );
+      let fileKey = result.skylink + result.viewKey;
 
-      // Update the button to let the user pick another file.
+      // Update the button to let the user pick another file. We do the button
+      // update before checking the error.
       setButtonDisabled(false);
       setButtonText("Upload to Skynet");
 
       // Check the error and fill out the output text.
       setOutputHidden(false);
       if (err !== null) {
-        setOutputSkylink("Unable to upload file:");
-        setOutputViewKey(err);
+        setOutputFileKey("Unable to upload file:", err);
       } else {
-        setOutputSkylink("Skylink: "+result.skylink);
-        setOutputViewKey("ViewKey: "+result.viewKey);
+        setOutputFileKey(fileKey);
       }
     };
   };
@@ -122,11 +122,103 @@ function LoginOrUploadCard(props) {
       >
         {buttonText}
       </button>
-      <p hidden={outputHidden}>
-        {outputSkylink}
-        <br />
-        {outputViewKey}
-      </p>
+      <p hidden={outputHidden}>{"FileKey: " + outputFileKey}</p>
+    </div>
+  );
+}
+
+// DownloadCard defines the react element that handles downloads.
+function DownloadCard(props) {
+  // Establish our stateful variables for the button. The default
+  // state assumes the kernel is not initialized, which means the
+  // button should say 'loading...' and be disabled.
+  const [buttonDisabled, setButtonDisabled] = React.useState(true);
+
+  // Establish stateful variables for the output text.
+  const [embedHidden, setEmbedHidden] = React.useState(true);
+  const [embedSrc, setEmbedSrc] = React.useState("");
+
+  // Establish a function to enable the download button after
+  // kernel login is complete.
+  React.useEffect(() => {
+    async function enableDownloadOnKernelLoad() {
+      const err = await kernel.kernelLoaded();
+      if (err !== null) {
+		// The upload button will handle displaying the error.
+        return;
+      }
+      setButtonDisabled(false);
+    }
+    enableDownloadOnKernelLoad();
+  }, [props]);
+
+  // downloadFile will take the provided skylink and viewkey,
+  // perform a download, decrypt the result, and finally load the
+  // data in an embedded frame.
+  const downloadFile = async () => {
+    const downloadFileKey =
+      document.getElementById("downloadFileKey").value;
+    if (downloadFileKey.length !== 90) {
+      alert(
+        "FileKey should have length 68, got: " +
+          downloadFileKey.length.toString()
+      );
+      return;
+    }
+    const skylink = downloadFileKey.slice(0, 46);
+    const viewKey = downloadFileKey.slice(46, 90);
+
+	// Disable the button while the download completes.
+    setButtonDisabled(true);
+
+	// Perform the download.
+    let [result, err] = await kernel.callModule(
+      "AQBCVx2y7pqsouf2GbLU_etXglcsXZDcWHKs5IiqV0I0DQ",
+      "viewEncryptedFile",
+      {
+        skylink,
+        viewKey,
+      }
+    );
+    if (err !== null) {
+      alert(err);
+      console.error(err);
+      setButtonDisabled(false);
+      return;
+    }
+    const fileData = result.fileData;
+
+    // Create a url from the fileData.
+    let url = URL.createObjectURL(new Blob([fileData]));
+    setEmbedSrc(url);
+    setEmbedHidden(false);
+
+    // Download is complete, re-enable the button.
+    setButtonDisabled(false);
+    return;
+  };
+
+  return (
+    <div>
+      <label style={{ margin: "12px" }}>Download FileKey</label>
+      <input
+        style={{ margin: "12px" }}
+        type="text"
+        id="downloadFileKey"
+      />
+      <button
+        style={{ margin: "12px" }}
+        onClick={downloadFile}
+        disabled={buttonDisabled}
+      >
+        {"Download File"}
+      </button>
+      <br />
+      <embed
+        src={embedSrc}
+        hidden={embedHidden}
+        width={"600"}
+      ></embed>
     </div>
   );
 }
@@ -135,6 +227,7 @@ const IndexPage = () => {
   return (
     <main>
       <LoginOrUploadCard />
+      <DownloadCard />
     </main>
   );
 };
